@@ -1,4 +1,5 @@
 import 'package:projeto_tcc/pages/create.dart';
+import 'package:projeto_tcc/pages/enviar_imagem.dart';
 import 'package:projeto_tcc/pages/home.dart';
 import 'package:projeto_tcc/pages/perfil.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
@@ -41,8 +42,10 @@ class _HomePageState extends State<HomePage> {
             onPageChanged: setPaginaAtual,
             children: const [
               Home(),
-              Create(),
-              Perfil(),
+              Foto(),
+              Perfil(
+                idUser: '',
+              ),
             ],
           ),
           bottomNavigationBar: Container(

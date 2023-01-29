@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 
 class Create extends StatefulWidget {
   const Create({Key? key}) : super(key: key);
@@ -8,12 +12,51 @@ class Create extends StatefulWidget {
 }
 
 class _CreateState extends State<Create> {
+  final FirebaseStorage storage = FirebaseStorage.instance;
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  ImagePicker imagePicker = ImagePicker();
+
+  final _tituloController = TextEditingController();
+  final _textoController = TextEditingController();
+
+  Future<XFile?> getImage() async {
+    final ImagePicker picker = ImagePicker();
+    XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    return image;
+  }
+
+  Future<String> upload(String path) async {
+    File file = File(path);
+    try {
+      String ref = 'images/img-${DateTime.now().toString()}.jpg';
+      UploadTask task = storage.ref(ref).putFile(file);
+      await task;
+      return await storage.ref(ref).getDownloadURL();
+    } on FirebaseException catch (e) {
+      throw Exception('Erro no Upload: ${e.code}');
+    }
+  }
+
+  pickAndUploadImage() async {
+    XFile? file = await getImage();
+    if (file != null) {
+      String imageUrl = await upload(file.path);
+      firestore.collection("Contos").add(
+        {
+          "titulo": _tituloController.text,
+          "texto": _textoController.text,
+          "imageUrl": imageUrl
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        physics: AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -45,20 +88,35 @@ class _CreateState extends State<Create> {
                     child: Column(
                       children: [
                         TextField(
+                          controller: _tituloController,
                           maxLines: null,
                           keyboardType: TextInputType.multiline,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             border: null,
                             hintText: 'Título',
                           ),
                         ),
                         TextField(
+                          controller: _textoController,
                           maxLines: null,
                           keyboardType: TextInputType.multiline,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             border: InputBorder.none,
                             hintText: 'Digite seu texto aqui',
                           ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            CollectionReference collection =
+                                firestore.collection("Contos");
+                            collection.add({
+                              "titulo": _tituloController.text,
+                              "texto": _textoController.text,
+                            });
+                            _tituloController.clear();
+                            _textoController.clear();
+                          },
+                          child: const Text("Publicar"),
                         ),
                       ],
                     ),
